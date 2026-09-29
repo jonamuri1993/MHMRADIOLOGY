@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Radiology Department</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--ink:#0f2233;--mut:#5b6b7a;--line:#dde4ea;--bg:#eaeef1;--acc:#0a7f8c;--warn:#c77d0a;--bad:#b3261e;--ok:#2e7d4f}
+*{box-sizing:border-box}
+body{margin:0;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button,input,select{font:inherit}[hidden]{display:none!important}
+#login{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+.art{background:#08141f linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/32px 32px;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);color:#cfe3ee;padding:48px;display:flex;flex-direction:column;justify-content:flex-end}
+.art h1{font-size:2.2rem;line-height:1.2;margin:0 0 6px;color:#fff}
+form.lg{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:48px;width:100%;max-width:420px;margin:auto}
+.top{display:flex;align-items:center;gap:10px;padding:10px 18px;background:#08141f;color:#fff;flex-wrap:wrap}
+.top b{margin-inline-end:auto;font-weight:600}
+.tabs{display:flex;padding:0 12px;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;padding:12px 16px;border-bottom:3px solid transparent;color:var(--mut);cursor:pointer;min-height:44px;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-color:var(--acc);font-weight:600}
+main{max-width:1000px;margin:0 auto;padding:18px}
+h2{font-size:1.1rem;margin:22px 0 10px}
+.row{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1.2fr) auto;gap:14px;align-items:center;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.g{height:6px;background:#e6ecf0;border-radius:3px;overflow:hidden;margin-bottom:4px}.g i{display:block;height:100%;background:var(--ok)}.g.low i{background:var(--warn)}.g.zero i{background:var(--bad)}
+.tag{font-size:.78rem;color:var(--mut)}.ba{display:flex;gap:6px;flex-wrap:wrap}
+.mv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 4px;border-bottom:1px solid var(--line)}.mv .tag{grid-column:1/-1}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;min-height:40px;color:inherit}
+.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}.top .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.3)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.tools input{flex:1;min-width:160px}.tools select{width:auto}
+input,select{border:1px solid #c9d3dc;border-radius:8px;padding:9px 12px;background:#fff;width:100%;font-size:16px}
+:focus-visible{outline:3px solid rgba(10,127,140,.4);outline-offset:1px}
+dialog{border:0;border-radius:14px;padding:22px;width:min(420px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}dialog::backdrop{background:rgba(8,20,31,.5)}
+dialog h3{margin:0 0 6px}dialog label{display:block;margin:10px 0 4px;font-size:.85rem;color:var(--mut)}
+.acts{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.adm{display:none!important}body.admin .adm{display:inline-flex!important}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.urow{display:flex;gap:8px}.urow input{width:90px}.chip{background:#eef3f6;border-radius:16px;padding:4px 12px;font-size:.85rem;cursor:pointer}
+.admbox{display:none}body.admin .admbox{display:block}table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:start}th{color:var(--mut);font-weight:500}#repArea{overflow-x:auto}
+.toast{position:fixed;bottom:20px;inset-inline:0;margin:auto;width:max-content;max-width:90vw;background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;z-index:99}
+@media(max-width:800px){#login{grid-template-columns:1fr}.art{padding:28px;min-height:170px}form.lg{padding:28px}}
+@media(max-width:640px){.row{grid-template-columns:1fr}main{padding:12px}}
+</style>
+</head>
+<body>
+<section id="login" hidden>
+  <div class="art"><h1 data-i="title"></h1><div data-i="sub"></div></div>
+  <form class="lg" onsubmit="login(event)">
+    <button type="button" class="btn" onclick="setLang(lang==='ar'?'en':'ar')" style="align-self:flex-end">EN / عربي</button>
+    <label><span class="tag" data-i="emp"></span><input id="emp" autocomplete="username" required></label>
+    <label><span class="tag" data-i="pw"></span><input id="pw" type="password" autocomplete="current-password" required></label>
+    <button class="btn p" data-i="login"></button>
+    <div class="ba"><button type="button" class="btn" onclick="openReq('register')" data-i="reqAcc"></button><button type="button" class="btn" onclick="openReq('forgot')" data-i="forgot"></button></div>
+  </form>
+</section>
+
+<div id="app" hidden>
+  <div class="top"><b data-i="title"></b><span id="who"></span>
+    <button class="btn" onclick="setLang(lang==='ar'?'en':'ar')">EN / عربي</button>
+    <button class="btn" onclick="$('#dPw').showModal()" data-i="chpw"></button>
+    <button class="btn" onclick="logout()" data-i="logout"></button></div>
+  <nav class="tabs"><button data-t="home" class="on" onclick="show('home')" data-i="home"></button><button data-t="cases" onclick="show('cases')" data-i="cases"></button><button data-t="inv" onclick="show('inv')" data-i="inv"></button><button data-t="reports" onclick="show('reports')" data-i="reports"></button><button data-t="temp" onclick="show('temp')" data-i="tempTab"></button><button data-t="sched" onclick="show('sched')" data-i="schedTab"></button><button class="adm" data-t="staff" onclick="show('staff')" data-i="staffTab"></button></nav>
+  <main>
+    <div id="v_home"><h2 data-i="low"></h2><div id="lowList"></div><h2 data-i="recent"></h2><div id="recent"></div></div>
+    <div id="v_inv" hidden>
+      <div class="tools"><input id="fq" oninput="renderInv()" data-p="search"><select id="fcat" onchange="renderInv()"></select>
+        <button class="btn p adm" onclick="openItem()" data-i="add"></button></div>
+      <div id="invList"></div>
+    </div>
+    <div id="v_cases" hidden>
+      <form class="card" onsubmit="saveCase(event)">
+        <div class="fg">
+          <label><span class="tag" data-i="center"></span><select id="e_center"></select></label>
+          <label><span class="tag" data-i="modality"></span><select id="e_mod"></select></label>
+          <label><span class="tag" data-i="clinic"></span><select id="e_clinic"></select></label>
+          <label><span class="tag" data-i="payment"></span><select id="e_pay"></select></label>
+        </div>
+        <p class="tag" data-i="uses"></p>
+        <div class="urow"><select id="e_item"></select><input id="e_uq" type="number" min="0" step="any" inputmode="decimal" placeholder="0"><button type="button" class="btn" onclick="addUse()" data-i="addUse"></button></div>
+        <div id="e_uses" class="ba" style="margin-top:8px"></div>
+        <p class="tag" data-i="privacy"></p>
+        <button class="btn p" data-i="saveCase"></button>
+      </form>
+      <h2 data-i="recentCases"></h2><div id="caseList"></div>
+    </div>
+    <div id="v_reports" hidden>
+      <div class="card"><div class="fg">
+        <label><span class="tag" data-i="from"></span><input type="date" id="r_from"></label>
+        <label><span class="tag" data-i="to"></span><input type="date" id="r_to"></label></div>
+        <div class="ba" style="margin-top:10px"><button class="btn" onclick="preset('week')" data-i="week"></button><button class="btn" onclick="preset('month')" data-i="month"></button><button class="btn" onclick="preset('last')" data-i="lastMonth"></button><button class="btn p" onclick="genReport()" data-i="gen"></button><button class="btn" onclick="repPdf()" data-i="pdf"></button><button class="btn" onclick="repXls()" data-i="xls"></button></div></div>
+      <div id="repArea" class="card"></div>
+    </div>
+    <div id="v_temp" hidden>
+      <form class="card" onsubmit="saveTemp(event)"><div class="fg">
+        <label><span class="tag" data-i="room"></span><select id="t_room"></select></label>
+        <label><span class="tag" data-i="temp"></span><input id="t_temp" type="number" step="any" inputmode="decimal" required></label>
+        <label><span class="tag" data-i="hum"></span><input id="t_hum" type="number" step="any" inputmode="decimal" required></label></div>
+        <button class="btn p" style="margin-top:10px" data-i="save"></button></form>
+      <div id="tempList"></div>
+    </div>
+    <div id="v_sched" hidden>
+      <div class="admbox"><form class="card" onsubmit="saveSched(event)"><div class="fg">
+        <label><span class="tag" data-i="monthL"></span><input type="month" id="s_month"></label>
+        <label><span class="tag" data-i="ttl"></span><input id="s_title"></label>
+        <label><span class="tag" data-i="file"></span><input type="file" id="s_file" accept="application/pdf,image/*" required></label></div>
+        <button class="btn p" style="margin-top:10px" data-i="upload"></button></form></div>
+      <div id="schedList"></div>
+    </div>
+    <div id="v_staff" hidden><h2 data-i="pending"></h2><div id="pendList"></div><h2 data-i="staffList"></h2><div id="staffList"></div></div>
+  </main>
+</div>
+
+<dialog id="dMove"><form onsubmit="saveMove(event)"><h3 id="m_title"></h3>
+  <label data-i="qty"></label><input id="m_qty" type="number" min="0.01" step="any" inputmode="decimal" required>
+  <label data-i="note"></label><input id="m_note">
+  <div class="acts"><button type="button" class="btn" onclick="$('#dMove').close()" data-i="cancel"></button><button class="btn p" data-i="save"></button></div></form></dialog>
+
+<dialog id="dItem"><form onsubmit="saveItem(event)">
+  <label data-i="n_ar"></label><input id="i_ar" required><label data-i="n_en"></label><input id="i_en" required>
+  <label data-i="cat"></label><select id="i_cat"></select><label data-i="unit"></label><select id="i_unit"></select>
+  <label data-i="min"></label><input id="i_min" type="number" min="0" step="any">
+  <label data-i="cur"></label><input id="i_qty" type="number" min="0" step="any">
+  <div class="acts"><button type="button" class="btn" onclick="$('#dItem').close()" data-i="cancel"></button><button class="btn p" data-i="save"></button></div></form></dialog>
+
+<dialog id="dPw"><form onsubmit="savePw(event)"><h3 data-i="chpw"></h3>
+  <label data-i="newpw"></label><input id="p_new" type="password" autocomplete="new-password" required>
+  <div class="acts"><button type="button" class="btn" onclick="$('#dPw').close()" data-i="cancel"></button><button class="btn p" data-i="save"></button></div></form></dialog>
+
+<dialog id="dReq"><form onsubmit="saveReq(event)"><h3 id="q_t"></h3>
+  <label data-i="fullName"></label><input id="q_name" required><label data-i="emp"></label><input id="q_id" required>
+  <div class="acts"><button type="button" class="btn" onclick="$('#dReq').close()" data-i="cancel"></button><button class="btn p" data-i="send"></button></div></form></dialog>
+<dialog id="dInfo"><h3 id="n_title"></h3><p id="n_msg" style="white-space:pre-line"></p><div class="acts"><button class="btn p" onclick="$('#dInfo').close()">OK</button></div></dialog>
+
+<script>
+const sb=supabase.createClient('https://shddpsazjqnxlrjvytyz.supabase.co','sb_publishable_hHVX-7vC0isLcRqvS8V7Tg_cikTirJe');
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CATS=['ppe','media','contrast','injection','ultrasound','cleaning','general'],UNITS=['box','piece','bottle','vial','roll','pack'];
+const T={
+ar:{title:'قسم الأشعة',sub:'إدارة القسم والمخزون',emp:'الرقم الوظيفي',pw:'كلمة المرور',login:'تسجيل الدخول',logout:'خروج',badLogin:'الرقم الوظيفي أو كلمة المرور غير صحيحة',home:'الرئيسية',inv:'المخزون',low:'أصناف تحتاج إعادة طلب',recent:'آخر الحركات',none:'لا يوجد',search:'بحث عن صنف',all:'كل الفئات',add:'إضافة صنف',use:'استخدام',receive:'استلام',edit:'تعديل',qty:'الكمية',note:'ملاحظة (اختياري)',save:'حفظ',cancel:'إلغاء',insufficient:'الكمية المتوفرة لا تكفي',saved:'تم الحفظ',err:'حدث خطأ، حاول مرة أخرى',n_ar:'الاسم بالعربي',n_en:'الاسم بالإنجليزي',cat:'الفئة',unit:'الوحدة',min:'حد إعادة الطلب',cur:'الكمية الحالية',chpw:'تغيير كلمة المرور',newpw:'كلمة المرور الجديدة (6 أحرف على الأقل)',pwShort:'كلمة المرور قصيرة',cases:'تسجيل الحالات',center:'المركز',modality:'نوع الفحص',clinic:'القسم',payment:'التغطية',uses:'المستلزمات المستخدمة في هذه الحالة (اختياري) — تُخصم من المخزون تلقائيًا',addUse:'إضافة',privacy:'لا يُسجَّل اسم المريض ولا رقم ملفه حفاظًا على الخصوصية.',saveCase:'حفظ الحالة',recentCases:'آخر الحالات',pickItem:'اختر صنفًا وكمية',
+k_out:'استخدام',k_in:'استلام',k_adjust:'تعديل الرصيد',c_ppe:'وقاية شخصية',c_media:'أقراص وطباعة',c_contrast:'صبغات',c_injection:'حقن ومستلزمات',c_ultrasound:'سونار',c_cleaning:'تنظيف وتعقيم',c_general:'عام',u_box:'علبة',u_piece:'قطعة',u_bottle:'زجاجة',u_vial:'قارورة',u_roll:'رول',u_pack:'باكيت'},
+en:{title:'Radiology Department',sub:'Department & inventory management',emp:'Employee ID',pw:'Password',login:'Sign in',logout:'Sign out',badLogin:'Wrong employee ID or password',home:'Home',inv:'Inventory',low:'Items to reorder',recent:'Recent movements',none:'None',search:'Search items',all:'All categories',add:'Add item',use:'Use',receive:'Receive',edit:'Edit',qty:'Quantity',note:'Note (optional)',save:'Save',cancel:'Cancel',insufficient:'Not enough stock',saved:'Saved',err:'Something went wrong, try again',n_ar:'Arabic name',n_en:'English name',cat:'Category',unit:'Unit',min:'Reorder level',cur:'Current quantity',chpw:'Change password',newpw:'New password (at least 6 characters)',pwShort:'Password too short',cases:'Register case',center:'Center',modality:'Exam type',clinic:'Department',payment:'Coverage',uses:'Supplies used in this case (optional) — deducted from stock automatically',addUse:'Add',privacy:'Patient name and file number are not recorded, for privacy.',saveCase:'Save case',recentCases:'Recent cases',pickItem:'Pick an item and quantity',
+k_out:'Use',k_in:'Receive',k_adjust:'Adjust balance',c_ppe:'Protective gear',c_media:'Discs & printing',c_contrast:'Contrast media',c_injection:'Injection supplies',c_ultrasound:'Ultrasound',c_cleaning:'Cleaning',c_general:'General',u_box:'box',u_piece:'pcs',u_bottle:'bottle',u_vial:'vial',u_roll:'roll',u_pack:'pack'}};
+const CENTERS=[['المواساة للرعاية الممتدة','المواساة للرعاية الممتدة','Mouwasat Long Term Center'],['مركز مداواة','مركز مداواة','Modawaa Clinic'],['مركز مغربي','مركز مغربي','Magrabi Clinic']],
+MODS=[['X-Ray','أشعة عامة','X-Ray'],['CT Scan','أشعة مقطعية','CT'],['Ultrasound','سونار','Ultrasound'],['Panorama','بانوراما','Panorama'],['DEXA Scan','هشاشة عظام','DEXA']],
+PAYS=[['Insurance','تأمين','Insurance'],['Cash','كاش','Cash']],
+CLINICS=['OPD','ICU','Inpatient/Ward','ER','OR','Internal Medicine','Orthopedics','Pediatrics','Surgery','Cardiology','ENT','Dermatology','Dental','OB/GYN','Urology','Neurology','Neurosurgery','Pulmonology','Gastroenterology','Endocrinology','Nephrology','Oncology','Ophthalmology','Physiotherapy','Family Medicine','Emergency','Other'];
+let uses=[],cases=[],ch=null,tm;
+Object.assign(T.ar,{reports:'التقارير',tempTab:'الحرارة والرطوبة',schedTab:'الجدول الشهري',staffTab:'الموظفون',from:'من تاريخ',to:'إلى تاريخ',week:'آخر 7 أيام',month:'هذا الشهر',lastMonth:'الشهر الماضي',gen:'إنشاء التقرير',pdf:'تحميل PDF',xls:'تحميل Excel',repTitle:'تقرير قسم الأشعة',total:'الإجمالي',ins:'تأمين',cash:'كاش',grand:'الإجمالي الكلي',pickRange:'حدد فترة صحيحة',wait:'جاري التجهيز...',date:'التاريخ',staff:'الموظف',summary:'الملخص',casesSheet:'الحالات',room:'الغرفة',temp:'الحرارة (°C)',hum:'الرطوبة (%)',monthL:'الشهر',ttl:'العنوان',file:'الملف (PDF أو صورة)',upload:'رفع الجدول',view:'عرض',big:'حجم الملف أكبر من 5 ميجا',pending:'طلبات معلقة',staffList:'الموظفون',approve:'قبول',reject:'رفض',reset:'كلمة مؤقتة',promote:'ترقية لأدمن',demote:'سحب الأدمن',remove:'إزالة',sure:'هل أنت متأكد؟',tempPw:'كلمة مرور مؤقتة',tempNote:'سلّمها للموظف، وسيُطلب منه تغييرها عند أول دخول.',roleAdmin:'أدمن',roleStaff:'موظف',reqAcc:'طلب حساب جديد',forgot:'نسيت كلمة المرور',fullName:'الاسم الكامل',send:'إرسال',sentTitle:'تم الإرسال',sent:'وصل طلبك للأدمن.'});
+Object.assign(T.en,{reports:'Reports',tempTab:'Temp & humidity',schedTab:'Monthly schedule',staffTab:'Staff',from:'From',to:'To',week:'Last 7 days',month:'This month',lastMonth:'Last month',gen:'Generate report',pdf:'Download PDF',xls:'Download Excel',repTitle:'Radiology Department Report',total:'Total',ins:'Insurance',cash:'Cash',grand:'Grand total',pickRange:'Pick a valid date range',wait:'Preparing...',date:'Date',staff:'Staff',summary:'Summary',casesSheet:'Cases',room:'Room',temp:'Temperature (°C)',hum:'Humidity (%)',monthL:'Month',ttl:'Title',file:'File (PDF or image)',upload:'Upload schedule',view:'View',big:'File is larger than 5 MB',pending:'Pending requests',staffList:'Staff',approve:'Approve',reject:'Reject',reset:'Temp password',promote:'Make admin',demote:'Remove admin',remove:'Remove',sure:'Are you sure?',tempPw:'Temporary password',tempNote:'Give it to the employee; they must change it on first sign-in.',roleAdmin:'Admin',roleStaff:'Staff',reqAcc:'Request an account',forgot:'Forgot password',fullName:'Full name',send:'Send',sentTitle:'Sent',sent:'Your request reached the admin.'});
+let lang=localStorage.getItem('lang')||'ar',me=null,items=[],moves=[],mv={},editing=null;
+const t=k=>T[lang][k]||k, nm=i=>lang==='ar'?i.name_ar:i.name_en, isLow=i=>Number(i.qty)<=Number(i.min_qty);
+function toast(m,bad){const e=document.createElement('div');e.className='toast';if(bad)e.style.background='var(--bad)';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2600)}
+function setLang(l){lang=l;try{localStorage.setItem('lang',l)}catch(e){}applyLang()}
+function fillSelects(){
+  const v=$('#fcat').value,c=$('#i_cat').value,u=$('#i_unit').value;
+  $('#fcat').innerHTML='<option value="">'+t('all')+'</option>'+CATS.map(x=>`<option value="${x}">${t('c_'+x)}</option>`).join('');$('#fcat').value=v;
+  $('#i_cat').innerHTML=CATS.map(x=>`<option value="${x}">${t('c_'+x)}</option>`).join('');
+  $('#i_unit').innerHTML=UNITS.map(x=>`<option value="${x}">${t('u_'+x)}</option>`).join('');
+  if(c)$('#i_cat').value=c;if(u)$('#i_unit').value=u}
+function applyLang(){
+  document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+  document.querySelectorAll('[data-p]').forEach(e=>e.placeholder=t(e.dataset.p));
+  fillSelects();render()}
+function show(tb){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===tb));['home','inv','cases','reports','temp','sched','staff'].forEach(k=>$('#v_'+k).hidden=tb!==k);if(tb==='reports'&&!$('#r_from').value)preset('week')}
+function render(){if(me){renderHome();renderInv();fillCase();renderCases();fillMisc();renderTemps();renderScheds();renderStaff()}}
+function renderHome(){
+  $('#lowList').innerHTML=items.filter(isLow).map(i=>`<div class="row"><div>${esc(nm(i))}<div class="tag">${t('c_'+i.category)}</div></div><div><strong>${i.qty}</strong> ${t('u_'+i.unit)}</div><div class="ba"><button class="btn p" onclick="openMove(${i.id},'in')">${t('receive')}</button></div></div>`).join('')||`<p class="tag">${t('none')}</p>`;
+  $('#recent').innerHTML=moves.map(m=>{const it=m.inventory_items||{},s=m.kind==='out'?'−':m.kind==='in'?'+':'=';
+    return `<div class="mv"><span>${esc(lang==='ar'?it.name_ar:it.name_en)}</span><b>${s}${m.qty} ${t('u_'+it.unit)}</b><span class="tag">${esc(m.staff_name||'')} · ${new Date(m.created_at).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})}</span></div>`}).join('')||`<p class="tag">${t('none')}</p>`}
+function renderInv(){
+  const q=$('#fq').value.trim().toLowerCase(),c=$('#fcat').value;
+  $('#invList').innerHTML=items.filter(i=>(!c||i.category===c)&&(!q||(i.name_ar+' '+i.name_en).toLowerCase().includes(q))).map(i=>{
+    const p=Math.min(100,Number(i.qty)/Math.max(Number(i.min_qty)*3,1)*100),cl=Number(i.qty)===0?'zero':isLow(i)?'low':'';
+    return `<div class="row"><div>${esc(nm(i))}<div class="tag">${t('c_'+i.category)} · ${esc(lang==='ar'?i.name_en:i.name_ar)}</div></div>
+    <div><div class="g ${cl}"><i style="width:${p}%"></i></div><div class="tag"><strong>${i.qty}</strong> ${t('u_'+i.unit)} · ${t('min')}: ${i.min_qty}</div></div>
+    <div class="ba"><button class="btn" onclick="openMove(${i.id},'out')">${t('use')}</button><button class="btn p" onclick="openMove(${i.id},'in')">${t('receive')}</button><button class="btn adm" onclick="openItem(${i.id})">${t('edit')}</button></div></div>`}).join('')||`<p class="tag">${t('none')}</p>`}
+const optLabel=(a,v)=>{const x=a.find(y=>y[0]===v);return x?(lang==='ar'?x[1]:x[2]):v};
+const opt=a=>a.map(x=>`<option value="${esc(x[0])}">${esc(lang==='ar'?x[1]:x[2])}</option>`).join('');
+function fillCase(){const ids=['e_center','e_mod','e_clinic','e_pay','e_item'],v=ids.map(i=>$('#'+i).value);
+  $('#e_center').innerHTML=opt(CENTERS);$('#e_mod').innerHTML=opt(MODS);$('#e_pay').innerHTML=opt(PAYS);
+  $('#e_clinic').innerHTML=CLINICS.map(c=>`<option>${c}</option>`).join('');
+  $('#e_item').innerHTML=items.map(i=>`<option value="${i.id}">${esc(nm(i))}</option>`).join('');
+  ids.forEach((id,k)=>{if(v[k])$('#'+id).value=v[k]});renderUses()}
+function addUse(){const id=Number($('#e_item').value),q=Number($('#e_uq').value);
+  if(!id||!(q>0)){toast(t('pickItem'),1);return}
+  const e=uses.find(x=>x.item_id===id);if(e)e.qty+=q;else uses.push({item_id:id,qty:q});$('#e_uq').value='';renderUses()}
+function renderUses(){$('#e_uses').innerHTML=uses.map((u,k)=>`<span class="chip" onclick="uses.splice(${k},1);renderUses()">${esc(nm(items.find(x=>x.id===u.item_id)||{}))} × ${u.qty} ✕</span>`).join('')}
+async function saveCase(e){e.preventDefault();
+  const {error}=await sb.rpc('register_exam',{p_center:$('#e_center').value,p_modality:$('#e_mod').value,p_clinic:$('#e_clinic').value,p_payment:$('#e_pay').value,p_uses:uses});
+  if(error){toast(/insufficient/.test(error.message)?t('insufficient'):t('err'),1);return}
+  uses=[];renderUses();toast(t('saved'));await load()}
+function renderCases(){$('#caseList').innerHTML=cases.map(c=>`<div class="mv"><span>CASE-${String(c.id).padStart(4,'0')} · ${esc(optLabel(MODS,c.modality))} · ${esc(c.clinic||'')}</span><b>${esc(optLabel(PAYS,c.payment))}</b><span class="tag">${esc(optLabel(CENTERS,c.center))} · ${esc(c.staff_name||'')} · ${new Date(c.created_at).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})}</span></div>`).join('')||`<p class="tag">${t('none')}</p>`}
+function live(){if(ch)return;const d=()=>{clearTimeout(tm);tm=setTimeout(load,400)};ch=sb.channel('live');
+  ['exams','inventory_items','inventory_moves'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},d));ch.subscribe()}
+let temps=[],scheds=[],pend=[],staff=[],rep=null,reqType='register';
+const ROOMS=[['غرفة CT / CT Scan Room','غرفة CT','CT room'],['غرفة X-Ray / X-Ray Room','غرفة X-Ray','X-Ray room'],['غرفة الفلوروسكوبي / Fluoroscopy Room','غرفة الفلوروسكوبي','Fluoroscopy room'],['غرفة السونار / Ultrasound Room','غرفة السونار','Ultrasound room'],['غرفة البانوراما / Panorama Room','غرفة البانوراما','Panorama room']];
+const fmtDt=d=>new Date(d).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'});
+const ymd=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+const isCash=p=>/cash|كاش/i.test(String(p||''));
+async function loadExtra(){
+  const q=[sb.from('temp_logs').select('*').order('created_at',{ascending:false}).limit(50),sb.from('schedules').select('id,month,title,created_by,created_at').order('created_at',{ascending:false})];
+  if(me.role==='admin')q.push(sb.from('pending_users').select('*').eq('status','pending').order('created_at'),sb.from('profiles').select('*').order('created_at'));
+  const r=await Promise.all(q);temps=r[0].data||[];scheds=r[1].data||[];pend=r[2]?(r[2].data||[]):[];staff=r[3]?(r[3].data||[]):[]}
+// ---- reports
+function preset(k){const n=new Date();let a,b;
+  if(k==='week'){b=n;a=new Date(n);a.setDate(n.getDate()-6)}
+  else if(k==='month'){a=new Date(n.getFullYear(),n.getMonth(),1);b=n}
+  else{a=new Date(n.getFullYear(),n.getMonth()-1,1);b=new Date(n.getFullYear(),n.getMonth(),0)}
+  $('#r_from').value=ymd(a);$('#r_to').value=ymd(b);genReport()}
+async function genReport(){
+  const a=$('#r_from').value,b=$('#r_to').value;if(!a||!b||a>b){toast(t('pickRange'),1);return}
+  const {data,error}=await sb.from('exams').select('id,center,modality,clinic,payment,staff_name,created_at').gte('created_at',a+'T00:00:00+03:00').lte('created_at',b+'T23:59:59+03:00').order('created_at');
+  if(error){toast(t('err'),1);return}
+  const rows=data||[],g={};
+  rows.forEach(x=>{const o=g[x.center+'|'+x.modality]=g[x.center+'|'+x.modality]||{c:x.center,m:x.modality,t:0,i:0,k:0};o.t++;isCash(x.payment)?o.k++:o.i++});
+  const gl=Object.values(g),cash=rows.filter(x=>isCash(x.payment)).length;
+  rep={a,b,rows,g:gl,tot:rows.length,cash};
+  const centers=[...new Set([...CENTERS.map(c=>c[0]),...gl.map(o=>o.c)])];
+  $('#repArea').innerHTML=`<h3 style="margin:0">${t('repTitle')}</h3><p class="tag">${a} → ${b}</p>`+centers.map(c=>{const r=gl.filter(o=>o.c===c);
+    return r.length?`<h2>${esc(optLabel(CENTERS,c))}</h2><table><tr><th>${t('modality')}</th><th>${t('total')}</th><th>${t('ins')}</th><th>${t('cash')}</th></tr>`+r.map(o=>`<tr><td>${esc(optLabel(MODS,o.m))}</td><td>${o.t}</td><td>${o.i}</td><td>${o.k}</td></tr>`).join('')+'</table>':''}).join('')
+    +`<h2>${t('grand')}: ${rep.tot} <span class="tag">(${t('ins')} ${rep.tot-cash} / ${t('cash')} ${cash})</span></h2>`}
+async function repPdf(){await genReport();if(!rep)return;toast(t('wait'));
+  try{const c=await html2canvas($('#repArea'),{scale:2,backgroundColor:'#ffffff',windowWidth:1000});
+  const pdf=new jspdf.jsPDF('p','mm','a4');let w=190,h=c.height*w/c.width;if(h>277){h=277;w=c.width*h/c.height}
+  pdf.addImage(c.toDataURL('image/jpeg',.95),'JPEG',(210-w)/2,10,w,h);pdf.save(`Radiology_${rep.a}_${rep.b}.pdf`)}catch(e){toast(t('err'),1)}}
+async function repXls(){await genReport();if(!rep)return;
+  const s=rep.g.map(o=>({[t('center')]:optLabel(CENTERS,o.c),[t('modality')]:optLabel(MODS,o.m),[t('total')]:o.t,[t('ins')]:o.i,[t('cash')]:o.k}));
+  s.push({[t('center')]:t('grand'),[t('modality')]:'',[t('total')]:rep.tot,[t('ins')]:rep.tot-rep.cash,[t('cash')]:rep.cash});
+  const p=rep.rows.map(x=>({CASE:'CASE-'+String(x.id).padStart(4,'0'),[t('date')]:new Date(x.created_at).toLocaleString('sv-SE').slice(0,16),[t('center')]:optLabel(CENTERS,x.center),[t('modality')]:optLabel(MODS,x.modality),[t('clinic')]:x.clinic||'',[t('payment')]:optLabel(PAYS,x.payment),[t('staff')]:x.staff_name||''}));
+  const wb=XLSX.utils.book_new();
+  [[t('summary'),s],[t('casesSheet'),p.length?p:[{CASE:''}]]].forEach(([n,r])=>{const ws=XLSX.utils.json_to_sheet(r);ws['!cols']=Object.keys(r[0]).map(k=>({wch:Math.max(k.length,...r.map(z=>String(z[k]).length))+2}));XLSX.utils.book_append_sheet(wb,ws,n)});
+  wb.Workbook={Views:[{RTL:lang==='ar'}]};XLSX.writeFile(wb,`Radiology_${rep.a}_${rep.b}.xlsx`)}
+// ---- temperature & humidity
+function fillMisc(){const v=$('#t_room').value;$('#t_room').innerHTML=opt(ROOMS);if(v)$('#t_room').value=v}
+async function saveTemp(e){e.preventDefault();
+  const {error}=await sb.from('temp_logs').insert({room:$('#t_room').value,temp:$('#t_temp').value+'°C',humidity:$('#t_hum').value+'%',staff_name:me.name+' ('+me.emp_id+')'});
+  if(error){toast(t('err'),1);return}$('#t_temp').value='';$('#t_hum').value='';toast(t('saved'));await load()}
+function renderTemps(){$('#tempList').innerHTML=temps.map(x=>`<div class="mv"><span>${esc(optLabel(ROOMS,x.room))}</span><b>${esc(x.temp)} · ${esc(x.humidity)}</b><span class="tag">${esc(x.staff_name||'')} · ${fmtDt(x.created_at)}</span></div>`).join('')||`<p class="tag">${t('none')}</p>`}
+// ---- monthly schedule files
+async function saveSched(e){e.preventDefault();const f=$('#s_file').files[0];if(!f)return;if(f.size>5*1024*1024){toast(t('big'),1);return}
+  const d=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
+  const {error}=await sb.from('schedules').insert({month:$('#s_month').value||ymd(new Date()).slice(0,7),title:$('#s_title').value.trim()||f.name,file_data:d,file_type:f.type,created_by:me.name});
+  if(error){toast(t('err'),1);return}$('#s_file').value='';$('#s_title').value='';toast(t('saved'));await load()}
+function renderScheds(){$('#schedList').innerHTML=scheds.map(x=>`<div class="row"><div>${esc(x.title||'')}<div class="tag">${esc(x.month||'')} · ${esc(x.created_by||'')}</div></div><div></div><div class="ba"><button class="btn p" onclick="viewSched(${x.id})">${t('view')}</button></div></div>`).join('')||`<p class="tag">${t('none')}</p>`}
+async function viewSched(id){const w=window.open('','_blank');const {data}=await sb.from('schedules').select('file_data').eq('id',id).single();
+  if(!data){if(w)w.close();toast(t('err'),1);return}
+  const url=URL.createObjectURL(await (await fetch(data.file_data)).blob());if(w)w.location=url;else location.href=url}
+// ---- staff management (admin)
+async function adm(body){const {data,error}=await sb.functions.invoke('admin-users',{body});
+  if(error){let m=t('err');try{m=(await error.context.json()).error||m}catch(e){}toast(m,1);return null}return data}
+function info(title,msg){$('#n_title').textContent=title;$('#n_msg').textContent=msg;$('#dInfo').showModal()}
+const showTmp=r=>info(t('tempPw'),`${t('emp')}: ${r.emp_id}\n${t('pw')}: ${r.temp_password}\n\n${t('tempNote')}`);
+async function approve(id){const r=await adm({action:'approve',pending_id:id});if(r){showTmp(r);await load()}}
+async function reject(id){await sb.from('pending_users').update({status:'rejected'}).eq('id',id);await load()}
+async function resetPw(id){if(!confirm(t('sure')))return;const r=await adm({action:'reset',profile_id:id});if(r)showTmp(r)}
+async function removeStaff(id){if(!confirm(t('sure')))return;if(await adm({action:'remove',profile_id:id})){toast(t('saved'));await load()}}
+async function toggleRole(id,role){const {error}=await sb.rpc('set_role',{p_id:id,p_role:role==='admin'?'staff':'admin'});if(error){toast(t('err'),1);return}toast(t('saved'));await load()}
+function renderStaff(){if(!me||me.role!=='admin')return;const sup=me.emp_id.toLowerCase()==='m3188';
+  $('#pendList').innerHTML=pend.map(p=>`<div class="row"><div>${esc(p.name)}<div class="tag">${esc(p.emp_id)} · ${t(p.request_type==='forgot'?'forgot':'reqAcc')}</div></div><div></div><div class="ba"><button class="btn p" onclick="approve(${p.id})">${t('approve')}</button><button class="btn" onclick="reject(${p.id})">${t('reject')}</button></div></div>`).join('')||`<p class="tag">${t('none')}</p>`;
+  $('#staffList').innerHTML=staff.map(u=>{const main=u.emp_id.toLowerCase()==='m3188',lock=main||(u.role==='admin'&&!sup);
+    return `<div class="row"><div>${esc(u.name)}<div class="tag">${esc(u.emp_id)} · ${t(u.role==='admin'?'roleAdmin':'roleStaff')}</div></div><div></div><div class="ba">${lock?'':`<button class="btn" onclick="resetPw('${u.id}')">${t('reset')}</button>`}${sup&&!main?`<button class="btn" onclick="toggleRole('${u.id}','${u.role}')">${t(u.role==='admin'?'demote':'promote')}</button>`:''}${lock?'':`<button class="btn" onclick="removeStaff('${u.id}')">${t('remove')}</button>`}</div></div>`}).join('')}
+// ---- account requests from the sign-in screen
+function openReq(k){reqType=k;$('#q_name').value='';$('#q_id').value='';$('#q_t').textContent=t(k==='forgot'?'forgot':'reqAcc');$('#dReq').showModal()}
+async function saveReq(e){e.preventDefault();
+  const {error}=await sb.from('pending_users').insert({name:$('#q_name').value.trim(),emp_id:$('#q_id').value.trim(),request_type:reqType,status:'pending',password:''});
+  if(error){toast(t('err'),1);return}$('#dReq').close();info(t('sentTitle'),t('sent'))}
+async function load(){
+  const [a,b,c]=await Promise.all([
+    sb.from('inventory_items').select('*').eq('active',true).order('category').order('name_en'),
+    sb.from('inventory_moves').select('*,inventory_items(name_ar,name_en,unit)').order('created_at',{ascending:false}).limit(12),
+    sb.from('exams').select('id,center,modality,clinic,payment,staff_name,created_at').order('created_at',{ascending:false}).limit(50)]);
+  items=a.data||[];moves=b.data||[];cases=c.data||[];await loadExtra();render()}
+function openMove(id,kind){mv={id,kind};$('#m_title').textContent=t('k_'+kind)+' — '+nm(items.find(x=>x.id===id));$('#m_qty').value='';$('#m_note').value='';$('#dMove').showModal();$('#m_qty').focus()}
+async function saveMove(e){e.preventDefault();
+  const {error}=await sb.rpc('inv_move',{p_item:mv.id,p_kind:mv.kind,p_qty:Number($('#m_qty').value),p_note:$('#m_note').value.trim()||null});
+  if(error){toast(/insufficient/.test(error.message)?t('insufficient'):t('err'),1);return}
+  $('#dMove').close();toast(t('saved'));await load()}
+function openItem(id){editing=id||null;
+  const i=id?items.find(x=>x.id===id):{name_ar:'',name_en:'',category:'general',unit:'piece',min_qty:0,qty:0};
+  $('#i_ar').value=i.name_ar;$('#i_en').value=i.name_en;$('#i_cat').value=i.category;$('#i_unit').value=i.unit;$('#i_min').value=i.min_qty;$('#i_qty').value=i.qty;$('#dItem').showModal()}
+async function saveItem(e){e.preventDefault();
+  const row={name_ar:$('#i_ar').value.trim(),name_en:$('#i_en').value.trim(),category:$('#i_cat').value,unit:$('#i_unit').value,min_qty:Number($('#i_min').value)||0};
+  const qty=Number($('#i_qty').value)||0;let id=editing,cur=0;
+  if(id){cur=Number(items.find(x=>x.id===id).qty);const {error}=await sb.from('inventory_items').update(row).eq('id',id);if(error){toast(t('err'),1);return}}
+  else{const {data,error}=await sb.from('inventory_items').insert(row).select().single();if(error){toast(t('err'),1);return}id=data.id}
+  if(qty!==cur){const {error}=await sb.rpc('inv_move',{p_item:id,p_kind:'adjust',p_qty:qty,p_note:null});if(error){toast(t('err'),1);return}}
+  $('#dItem').close();toast(t('saved'));await load()}
+async function savePw(e){e.preventDefault();const p=$('#p_new').value;
+  if(p.length<6){toast(t('pwShort'),1);return}
+  const {error}=await sb.auth.updateUser({password:p});if(error){toast(t('err'),1);return}
+  await sb.rpc('clear_must_change');$('#dPw').close();toast(t('saved'))}
+async function login(e){e.preventDefault();
+  const {error}=await sb.auth.signInWithPassword({email:$('#emp').value.trim().toLowerCase()+'@radiology.local',password:$('#pw').value});
+  if(error){toast(t('badLogin'),1);return}$('#pw').value='';await boot()}
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){me=null;$('#app').hidden=true;$('#login').hidden=false;return}
+  const {data:p}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+  if(!p||p.status!=='active'){await sb.auth.signOut();me=null;$('#app').hidden=true;$('#login').hidden=false;toast(t('badLogin'),1);return}
+  me=p;document.body.classList.toggle('admin',p.role==='admin');$('#login').hidden=true;$('#app').hidden=false;$('#who').textContent=p.name;
+  await load();show('home');live();if(p.must_change_password)$('#dPw').showModal()}
+async function logout(){await sb.auth.signOut();location.reload()}
+applyLang();boot();
+</script>
+</body>
+</html>
